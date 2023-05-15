@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid lightblue;
+        }
+    </style>
+    <title>Ko3Phys Demo</title>
+</head>
+<body>
+    <canvas id="ko3phys-demo" width="800" height="800"></canvas>
+    <script src="dist/ko3phys.js"></script>
+    <script>
+        const canvas = document.getElementById("ko3phys-demo")
+        const world = new World()
+        const renderer = new Renderer(canvas.getContext("2d"), world)
+        const box = new Box(new Vector2(200, 60), 100, 200)
+        renderer.drawBox(box)
+    </script>
+</body>
+</html>
