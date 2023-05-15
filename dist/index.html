@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+        }
+        canvas {
+            border-bottom: 1px solid #ccc;
+        }
+        aside {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 15px;
+        }
+        .creation-panel {
+            float: right;
+            border: 2px solid #ccc;
+            padding: 4px;
+            border-radius: 4px;
+        }
+    </style>
+    <title>Ko3Phys Demo</title>
+</head>
+<body>
+    <canvas id="ko3phys-demo" width="1200" height="800"></canvas>
+    <aside>
+        <div class="creation-panel">
+            <div>
+                <input id="ko3phys-width" type="range" min="0.5" max="5" step="0.5" value="1">
+                <label for="ko3phys-width" id="ko3phys-width-label">가로: ?m</label>
+            </div>
+            <div>
+                <input id="ko3phys-height" type="range" min="0.5" max="5" step="0.5" value="1">
+                <label for="ko3phys-height" id="ko3phys-height-label">세로: ?m</label>    
+            </div>
+            <div>
+                <input id="ko3phys-mass" type="range" min="1" max="10" step="1" value="1">
+                <label for="ko3phys-mass" id="ko3phys-mass-label">질량: ?kg</label>    
+            </div>
+            <div>
+                <input id="ko3phys-static" type="checkbox" value=true>
+                <label for="ko3phys-static">물체 고정</label>    
+            </div>
+        </div>
+
+        <div>
+            <input id="ko3phys-timescale" type="range" min="0" max="1" step="0.05" value="1" onchange="updateSliders()">
+            <label for="ko3phys-timescale" id="ko3phys-timescale-label">시간 배속 x?</label>
+        </div>
+        <div>
+            <input id="ko3phys-zoom" type="range" min="10" max="102" step="4" value="30" onchange="updateSliders()">
+            <label for="ko3phys-zoom" id="ko3phys-zoom-label">1m = ?px</label>
+        </div>
+
+    </aside>
+
+    <script src="ko3phys.js"></script>
+    <script>
+        // Initialize
+        const canvas = document.querySelector("#ko3phys-demo")
+        const world = new World()
+        const renderer = new Renderer(canvas.getContext("2d"), world)
+
+        // Body initialization
+        const floor = new Box(new Vector2(25, -5), 50, 10)
+        floor.isStatic = true
+        world.bodies.push(floor)
+
+        const box = new Box(new Vector2(2, 20), 2, 2)
+        box.mass = 2
+        world.bodies.push(box)
+
+        // Update
+        let lastTime = performance.now()
+        function updateKo3Phys() {
+            const curTime = performance.now()
+            const dt = (curTime - lastTime) / 1000
+            lastTime = curTime
+            world.tick(dt)
+            renderer.renderWorld()
+            requestAnimationFrame(updateKo3Phys)
+        }
+        renderer.renderWorld()
+        requestAnimationFrame(updateKo3Phys)
+
+        // On slider(input) update
+        function updateSliders() {
+            const timescale = document.querySelector("#ko3phys-timescale")
+            const timescaleLabel = document.querySelector("#ko3phys-timescale-label")
+            world.timescale = Number(timescale.value)
+            timescaleLabel.innerText = `시간 배속 x${world.timescale}`
+
+            const zoom = document.querySelector("#ko3phys-zoom")
+            const zoomLabel = document.querySelector("#ko3phys-zoom-label")
+            renderer.scalePx = Number(zoom.value)
+            zoomLabel.innerText = `1m = ${renderer.scalePx}px`
+        }
+        updateSliders()
+    </script>
+    <script>
+        const heldKeys = {}
+        window.onkeydown = (e) => {
+            if (e.key === "ArrowLeft") {
+                renderer.baseXPx += 10
+            } else if (e.key === "ArrowRight") {
+                renderer.baseXPx -= 10
+            } else if (e.key === "ArrowUp") {
+                renderer.baseYPx += 10
+            } else if (e.key === "ArrowDown") {
+                renderer.baseYPx -= 10
+            }
+            heldKeys[e.key] = true
+        }
+
+        window.onkeyup = (e) => {
+            heldKeys[e.key] = undefined
+        }
+
+        function updateKo3Keys() {
+            const movementDelta = 5
+            if (heldKeys["ArrowLeft"]) {
+                renderer.baseXPx += movementDelta
+            }
+            if (heldKeys["ArrowRight"]) {
+                renderer.baseXPx -= movementDelta
+            }
+            if (heldKeys["ArrowUp"]) {
+                renderer.baseYPx += movementDelta
+            }
+            if (heldKeys["ArrowDown"]) {
+                renderer.baseYPx -= movementDelta
+            }
+            requestAnimationFrame(updateKo3Keys)
+        }
+        requestAnimationFrame(updateKo3Keys)
+
+        canvas.onwheel = function(e) {
+            e.preventDefault()
+
+            const zoom = document.querySelector("#ko3phys-zoom")
+            if (e.deltaY < 0) {
+                zoom.stepUp(1)
+                updateSliders()
+            } else if (0 < e.deltaY) {
+                zoom.stepDown(1)
+                updateSliders()    
+            }
+        }
+
+        canvas.onmousemove = function(e) {
+            if (e.buttons === 4) {
+                renderer.baseXPx += e.movementX
+                renderer.baseYPx += e.movementY
+            }
+        }
+    </script>
+    <script>
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight - 200
+        }
+        window.onresize = resizeCanvas
+        resizeCanvas()
+    </script>
+</body>
+</html>
