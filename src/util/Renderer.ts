@@ -8,6 +8,10 @@ class Renderer {
         return new Vector2(vec.x * this.scalePx + this.baseXPx, -vec.y * this.scalePx + this.baseYPx)
     }
 
+    canvasToWorldVector(vec: Vector2) {
+        return new Vector2((vec.x - this.baseXPx) / this.scalePx, -(vec.y - this.baseYPx) / this.scalePx)
+    }
+
     drawBox(box: Box) {
         const boxPos = this.toCanvasVector(box.position)
         const width = box.width * this.scalePx
@@ -96,6 +100,18 @@ class Renderer {
         this.ctx.fillStyle = "#000000bb"
         this.ctx.fillText(`${body.mass}kg`, pos.x, pos.y)
     }
+
+    drawThrowerArrow() {
+        const body = this.world.thrower.selectedBody
+        const targetPos = this.world.thrower.targetPosition
+        if (body && targetPos) {
+            const startPos = this.toCanvasVector(body.position)
+            const endPos = this.toCanvasVector(targetPos)
+            this.ctx.strokeStyle = "#44ddaacc"
+            this.ctx.lineWidth = 4
+            this.drawArrowGizmo(startPos, endPos)
+        } 
+    }
     
     renderWorld() {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
@@ -105,5 +121,6 @@ class Renderer {
             this.drawVelocityArrow(body)
             this.drawMass(body)
         })
+        this.drawThrowerArrow()
     }
 }

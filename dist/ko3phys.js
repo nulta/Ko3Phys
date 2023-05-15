@@ -40,12 +40,26 @@ class Box extends Body {
         return new Bounds(new Vector2(x1, y1), new Vector2(x2, y2));
     }
 }
+class Thrower {
+    selectedBody = null;
+    targetPosition = null;
+    throwBody() {
+        if (!this.selectedBody)
+            return;
+        if (!this.targetPosition)
+            return;
+        this.selectedBody.velocity = this.targetPosition.sub(this.selectedBody.position);
+        this.selectedBody = null;
+        this.targetPosition = null;
+    }
+}
 class World {
     constructor() { }
     bodies = [];
     t = 0;
     timescale = 1.0;
     gravity = new Vector2(0, -10.0);
+    thrower = new Thrower();
     tick(dt) {
         dt = dt * this.timescale;
         if (dt == 0) {
@@ -90,7 +104,13 @@ class World {
             return;
         }
         // 운동량 보존... 완전 탄성 충돌... 으아악
-        collider.momentum, collidee.momentum = collidee.momentum, collider.momentum;
+        const momentum1 = collider.momentum;
+        const momentum2 = collidee.momentum;
+        collider.momentum = momentum2;
+        collidee.momentum = momentum1;
+    }
+    findBodyInPos(pos) {
+        return this.bodies.find((body) => body.bounds.contains(pos));
     }
 }
 // Axis-Aligned Bounding Box (AABB)
@@ -197,6 +217,9 @@ class Renderer {
     toCanvasVector(vec) {
         return new Vector2(vec.x * this.scalePx + this.baseXPx, -vec.y * this.scalePx + this.baseYPx);
     }
+    canvasToWorldVector(vec) {
+        return new Vector2((vec.x - this.baseXPx) / this.scalePx, -(vec.y - this.baseYPx) / this.scalePx);
+    }
     drawBox(box) {
         const boxPos = this.toCanvasVector(box.position);
         const width = box.width * this.scalePx;
@@ -271,6 +294,17 @@ class Renderer {
         this.ctx.fillStyle = "#000000bb";
         this.ctx.fillText(`${body.mass}kg`, pos.x, pos.y);
     }
+    drawThrowerArrow() {
+        const body = this.world.thrower.selectedBody;
+        const targetPos = this.world.thrower.targetPosition;
+        if (body && targetPos) {
+            const startPos = this.toCanvasVector(body.position);
+            const endPos = this.toCanvasVector(targetPos);
+            this.ctx.strokeStyle = "#44ddaacc";
+            this.ctx.lineWidth = 4;
+            this.drawArrowGizmo(startPos, endPos);
+        }
+    }
     renderWorld() {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         this.drawGizmos();
@@ -279,6 +313,7 @@ class Renderer {
             this.drawVelocityArrow(body);
             this.drawMass(body);
         });
+        this.drawThrowerArrow();
     }
 }
 class Vector2 {

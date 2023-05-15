@@ -4,6 +4,7 @@ class World {
     public t = 0
     public timescale = 1.0
     public gravity = new Vector2(0, -10.0)
+    public readonly thrower = new Thrower()
 
     tick(dt: number) {
         dt = dt * this.timescale
@@ -52,6 +53,13 @@ class World {
         }
         
         // 운동량 보존... 완전 탄성 충돌... 으아악
-        collider.momentum, collidee.momentum = collidee.momentum, collider.momentum
+        const momentum1 = collider.momentum
+        const momentum2 = collidee.momentum
+        collider.momentum = momentum2
+        collidee.momentum = momentum1
+    }
+
+    findBodyInPos(pos: Vector2) {
+        return this.bodies.find((body) => body.bounds.contains(pos))
     }
 }

@@ -30,20 +30,20 @@
     <aside>
         <div class="creation-panel">
             <div>
-                <input id="ko3phys-width" type="range" min="0.5" max="5" step="0.5" value="1">
+                <input id="ko3phys-width" type="range" min="0.5" max="5" step="0.5" value="1" onchange="updateSliders()">
                 <label for="ko3phys-width" id="ko3phys-width-label">가로: ?m</label>
             </div>
             <div>
-                <input id="ko3phys-height" type="range" min="0.5" max="5" step="0.5" value="1">
+                <input id="ko3phys-height" type="range" min="0.5" max="5" step="0.5" value="1" onchange="updateSliders()">
                 <label for="ko3phys-height" id="ko3phys-height-label">세로: ?m</label>    
             </div>
             <div>
-                <input id="ko3phys-mass" type="range" min="1" max="10" step="1" value="1">
-                <label for="ko3phys-mass" id="ko3phys-mass-label">질량: ?kg</label>    
+                <input id="ko3phys-mass" type="range" min="1" max="10" step="1" value="1" onchange="updateSliders()">
+                <label for="ko3phys-mass" id="ko3phys-mass-label">질량: ?kg</label>
             </div>
             <div>
-                <input id="ko3phys-static" type="checkbox" value=true>
-                <label for="ko3phys-static">물체 고정</label>    
+                <input id="ko3phys-static" type="checkbox">
+                <label for="ko3phys-static">물체 고정</label>
             </div>
         </div>
 
@@ -55,6 +55,15 @@
             <input id="ko3phys-zoom" type="range" min="10" max="102" step="4" value="30" onchange="updateSliders()">
             <label for="ko3phys-zoom" id="ko3phys-zoom-label">1m = ?px</label>
         </div>
+        <p>
+            <!-- <b>조작 방법</b><br> -->
+            <ul>
+                <li>좌클릭 - 물체 이동</li>
+                <li>휠클릭 - 시점 이동</li>
+                <li>스크롤 - 줌 인/아웃</li>
+                <li>우클릭 - 물체 생성</li>
+            </ul>
+        </p>
 
     </aside>
 
@@ -65,101 +74,159 @@
         const world = new World()
         const renderer = new Renderer(canvas.getContext("2d"), world)
 
-        // Body initialization
-        const floor = new Box(new Vector2(25, -5), 50, 10)
-        floor.isStatic = true
-        world.bodies.push(floor)
+        ;(()=>{
+            // Body initialization
+            const floor = new Box(new Vector2(25, -5), 50, 10)
+            floor.isStatic = true
+            world.bodies.push(floor)
 
-        const box = new Box(new Vector2(2, 20), 2, 2)
-        box.mass = 2
-        world.bodies.push(box)
+            const box = new Box(new Vector2(2, 20), 2, 2)
+            box.mass = 2
+            world.bodies.push(box)
 
-        // Update
-        let lastTime = performance.now()
-        function updateKo3Phys() {
-            const curTime = performance.now()
-            const dt = (curTime - lastTime) / 1000
-            lastTime = curTime
-            world.tick(dt)
+            // Update
+            let lastTime = performance.now()
+            function updateKo3Phys() {
+                const curTime = performance.now()
+                const dt = (curTime - lastTime) / 1000
+                lastTime = curTime
+                world.tick(dt)
+                renderer.renderWorld()
+                requestAnimationFrame(updateKo3Phys)
+            }
             renderer.renderWorld()
             requestAnimationFrame(updateKo3Phys)
-        }
-        renderer.renderWorld()
-        requestAnimationFrame(updateKo3Phys)
+
+        })();
 
         // On slider(input) update
         function updateSliders() {
-            const timescale = document.querySelector("#ko3phys-timescale")
+            const timescale = Number(document.querySelector("#ko3phys-timescale").value)
             const timescaleLabel = document.querySelector("#ko3phys-timescale-label")
-            world.timescale = Number(timescale.value)
-            timescaleLabel.innerText = `시간 배속 x${world.timescale}`
+            world.timescale = timescale
+            timescaleLabel.innerText = `시간 배속 x${timescale}`
 
-            const zoom = document.querySelector("#ko3phys-zoom")
+            const zoom = Number(document.querySelector("#ko3phys-zoom").value)
             const zoomLabel = document.querySelector("#ko3phys-zoom-label")
-            renderer.scalePx = Number(zoom.value)
-            zoomLabel.innerText = `1m = ${renderer.scalePx}px`
+            renderer.scalePx = zoom
+            zoomLabel.innerText = `1m = ${zoom}px`
+
+            const width = Number(document.querySelector("#ko3phys-width").value)
+            const widthLabel = document.querySelector("#ko3phys-width-label")
+            widthLabel.innerText = `가로: ${width}m`
+            
+            const height = Number(document.querySelector("#ko3phys-height").value)
+            const heightLabel = document.querySelector("#ko3phys-height-label")
+            heightLabel.innerText = `세로: ${height}m`
+
+            const mass = Number(document.querySelector("#ko3phys-mass").value)
+            const massLabel = document.querySelector("#ko3phys-mass-label")
+            massLabel.innerText = `무게: ${mass}kg`
         }
         updateSliders()
     </script>
     <script>
-        const heldKeys = {}
-        window.onkeydown = (e) => {
-            if (e.key === "ArrowLeft") {
-                renderer.baseXPx += 10
-            } else if (e.key === "ArrowRight") {
-                renderer.baseXPx -= 10
-            } else if (e.key === "ArrowUp") {
-                renderer.baseYPx += 10
-            } else if (e.key === "ArrowDown") {
-                renderer.baseYPx -= 10
-            }
-            heldKeys[e.key] = true
-        }
 
-        window.onkeyup = (e) => {
-            heldKeys[e.key] = undefined
-        }
+        ;(()=>{
+            const heldKeys = {}
+            window.onkeydown = (e) => {
+                if (e.key === "ArrowLeft") {
+                    renderer.baseXPx += 10
+                } else if (e.key === "ArrowRight") {
+                    renderer.baseXPx -= 10
+                } else if (e.key === "ArrowUp") {
+                    renderer.baseYPx += 10
+                } else if (e.key === "ArrowDown") {
+                    renderer.baseYPx -= 10
+                }
+                heldKeys[e.key] = true
+            }
 
-        function updateKo3Keys() {
-            const movementDelta = 5
-            if (heldKeys["ArrowLeft"]) {
-                renderer.baseXPx += movementDelta
+            window.onkeyup = (e) => {
+                heldKeys[e.key] = undefined
             }
-            if (heldKeys["ArrowRight"]) {
-                renderer.baseXPx -= movementDelta
-            }
-            if (heldKeys["ArrowUp"]) {
-                renderer.baseYPx += movementDelta
-            }
-            if (heldKeys["ArrowDown"]) {
-                renderer.baseYPx -= movementDelta
+
+            function updateKo3Keys() {
+                const movementDelta = 5
+                if (heldKeys["ArrowLeft"]) {
+                    renderer.baseXPx += movementDelta
+                }
+                if (heldKeys["ArrowRight"]) {
+                    renderer.baseXPx -= movementDelta
+                }
+                if (heldKeys["ArrowUp"]) {
+                    renderer.baseYPx += movementDelta
+                }
+                if (heldKeys["ArrowDown"]) {
+                    renderer.baseYPx -= movementDelta
+                }
+                requestAnimationFrame(updateKo3Keys)
             }
             requestAnimationFrame(updateKo3Keys)
-        }
-        requestAnimationFrame(updateKo3Keys)
 
-        canvas.onwheel = function(e) {
-            e.preventDefault()
+            canvas.onwheel = function(e) {
+                e.preventDefault()
 
-            const zoom = document.querySelector("#ko3phys-zoom")
-            if (e.deltaY < 0) {
-                zoom.stepUp(1)
-                updateSliders()
-            } else if (0 < e.deltaY) {
-                zoom.stepDown(1)
-                updateSliders()    
+                const zoom = document.querySelector("#ko3phys-zoom")
+                if (e.deltaY < 0) {
+                    zoom.stepUp(1)
+                    updateSliders()
+                } else if (0 < e.deltaY) {
+                    zoom.stepDown(1)
+                    updateSliders()    
+                }
             }
-        }
 
-        canvas.onmousemove = function(e) {
-            if (e.buttons === 4) {
-                renderer.baseXPx += e.movementX
-                renderer.baseYPx += e.movementY
+            canvas.onmousemove = function(e) {
+                if (e.buttons === 4) {
+                    renderer.baseXPx += e.movementX
+                    renderer.baseYPx += e.movementY
+                } else if (e.buttons === 1) {
+                    if (world.thrower.selectedBody) {
+                        const canvasPos = new Vector2(e.clientX, e.clientY)
+                        const worldPos = renderer.canvasToWorldVector(canvasPos)
+                        world.thrower.targetPosition = worldPos
+                    }
+                }
             }
-        }
+
+            canvas.onmousedown = function(e) {
+                if (e.buttons !== 1) {return}
+
+                const canvasPos = new Vector2(e.clientX, e.clientY)
+                const worldPos = renderer.canvasToWorldVector(canvasPos)
+                const body = world.findBodyInPos(worldPos)
+                if (body) {
+                    world.thrower.selectedBody = body
+                    world.thrower.targetPosition = body.position
+                }
+            }
+
+            canvas.onmouseup = function(e) {
+                if (e.buttons === 1) {return}
+                if (world.thrower.selectedBody) {
+                    world.thrower.throwBody()
+                }
+            }
+
+            canvas.oncontextmenu = function(e) {
+                e.preventDefault()
+                const canvasPos = new Vector2(e.clientX, e.clientY)
+                const worldPos = renderer.canvasToWorldVector(canvasPos)
+
+                const width = Number(document.querySelector("#ko3phys-width").value)
+                const height = Number(document.querySelector("#ko3phys-height").value)
+                const mass = Number(document.querySelector("#ko3phys-mass").value)
+                const static = Boolean(document.querySelector("#ko3phys-static").checked)
+
+                const box = new Box(worldPos, width, height)
+                box.mass = mass
+                box.isStatic = static
+                world.bodies.push(box)
+            }
+        })();
     </script>
     <script>
-
         function resizeCanvas() {
             canvas.width = window.innerWidth
             canvas.height = window.innerHeight - 200
