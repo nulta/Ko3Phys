@@ -7,7 +7,7 @@
     - 디자인 갖다 버렸습니다.
     - 버그 속출합니다.
 
-![1125a2d0-2000-45d9-a2ee-f95ccb57caf8](https://github.com/nulta/Ko3Phys/assets/35414766/a18329b8-6d79-443a-b51a-2d9c5cbcae48)
+![](https://i.imgur.com/h3EDIOR.gif)
 
 ## 사용법
 1. `dist` 폴더의 `index.html`을 선호하는 웹 브라우저로 열면 됩니다.
