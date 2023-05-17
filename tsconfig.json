@@ -3,6 +3,7 @@
         "target": "ES2022",
         "strict": true,
         "outFile": "dist/ko3phys.js",
+        "sourceMap": true,
     },
     "include": ["src"],
 }

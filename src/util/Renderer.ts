@@ -19,8 +19,14 @@ class Renderer {
         const x1 = boxPos.x - width / 2
         const y1 = boxPos.y - height / 2
         
-        this.ctx.strokeStyle = "#008877"
-        this.ctx.fillStyle = "#00887766"
+        if (box.consumeAllEnergy) {
+            // 그렇다면 색을 다르게 칠해 준다.
+            this.ctx.strokeStyle = "#777"
+            this.ctx.fillStyle = "#3336"
+        } else {
+            this.ctx.strokeStyle = "#087"
+            this.ctx.fillStyle = "#0876"
+        }
         this.ctx.lineWidth = 2
         this.ctx.fillRect(x1, y1, width, height)
         this.ctx.strokeRect(x1, y1, width, height)
@@ -88,6 +94,15 @@ class Renderer {
         this.ctx.strokeStyle = "#44aaddcc"
         this.ctx.lineWidth = 4
         this.drawArrowGizmo(scrPos, velPos)
+
+        // m/s text
+        if (this.scalePx >= 20) {
+            const speed = Math.floor(body.velocity.length * 10) / 10
+            this.ctx.font = "14px sans-serif bold"
+            this.ctx.textAlign = "center"
+            this.ctx.fillStyle = "#2288bb"
+            this.ctx.fillText(`${speed} m/s`, velPos.x, velPos.y - 16)
+        }
     }
 
     drawMass(body: Body) {
@@ -98,7 +113,7 @@ class Renderer {
         this.ctx.font = "14px sans-serif bold"
         this.ctx.textAlign = "center"
         this.ctx.fillStyle = "#000000bb"
-        this.ctx.fillText(`${body.mass}kg`, pos.x, pos.y)
+        this.ctx.fillText(`${body.mass} kg`, pos.x, pos.y)
     }
 
     drawThrowerArrow() {

@@ -59,6 +59,10 @@ class Vector2 {
     }
 
     reflect(normal: Vector2) {
+        return this.add(normal.mul(this.reverse.dot(normal)).mul(2))
+    }
+
+    stopByReflection(normal: Vector2) {
         return this.add(normal.mul(this.reverse.dot(normal)))
     }
 }

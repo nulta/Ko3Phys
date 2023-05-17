@@ -75,7 +75,7 @@ class Bounds {
         if (ay1 <= by1 && by1 <= ay2) {distY = by1 - ay2}  // A1---b1---A2   b2
         if (by1 <= ay1 && ay1 <= by2) {distY = by2 - ay1}  // B1---a1---B2   a2
 
-        if (distX < distY) {
+        if (Math.abs(distX) < Math.abs(distY)) {
             return new Vector2(distX, 0)
         } else {
             return new Vector2(0, distY)

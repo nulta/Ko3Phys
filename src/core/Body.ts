@@ -3,6 +3,7 @@ class Body {
     public velocity = Vector2.zero
     public mass = 1
     public isStatic = false
+    public consumeAllEnergy = false  // 반드시 완전 비탄성 충돌하는 물체. 예) 바닥.
 
     tick(dt: number) {
         if (this.isStatic) {

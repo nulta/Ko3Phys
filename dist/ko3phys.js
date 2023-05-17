@@ -7,6 +7,7 @@ class Body {
     velocity = Vector2.zero;
     mass = 1;
     isStatic = false;
+    consumeAllEnergy = false; // 반드시 완전 비탄성 충돌하는 물체. 예) 바닥.
     tick(dt) {
         if (this.isStatic) {
             this.velocity = Vector2.zero;
@@ -58,10 +59,11 @@ class World {
     bodies = [];
     t = 0;
     timescale = 1.0;
+    maxDeltaTime = 0.5;
     gravity = new Vector2(0, -10.0);
     thrower = new Thrower();
     tick(dt) {
-        dt = dt * this.timescale;
+        dt = Math.min(dt * this.timescale, this.maxDeltaTime);
         if (dt == 0) {
             return;
         }
@@ -78,7 +80,7 @@ class World {
         body.velocity = body.velocity.add(this.gravity.mul(delta));
     }
     findAndResolveCollision(movingBody) {
-        // 맥락상 O(n^2). 최적화할 수 있는 방법은 있을텐데...
+        // 맥락상 O(n^2). 최적화할 수 있는 방법은 있을테지만 아직은 이 정도로도 충분.
         this.bodies.forEach((worldBody) => {
             if (movingBody === worldBody) {
                 return;
@@ -95,19 +97,38 @@ class World {
         // 사실 각도도 계산해야 하는데, 일단 지금은 전부 AABB니까 각도 계산은 제외하자.
         // 일단, 끼이지 않도록 위치를 조정해 줘야 한다..!
         const normal = collider.bounds.nearestResolveNormal(collidee.bounds); // 대충 구한 법선
+        // if (!normal.equals(new Vector2(0, 1))) debugger;
         const moveDelta = collider.bounds.resolveIntersection(collidee.bounds); // 변위 벡터
         collider.position = collider.position.add(moveDelta);
-        // 벽에 박았을 경우 - 반사각을 계산해서 날려 준다.
-        if (collidee.isStatic) {
-            // console.log("Normal: ", normal.x, normal.y)
-            collider.velocity = collider.velocity.reflect(normal);
-            return;
+        // 둘 중 하나의 .consumeAllEnergy가 true인가?
+        if (collider.consumeAllEnergy || collidee.consumeAllEnergy) {
+            // 1) 그렇다면 완전 비탄성 충돌한다.
+            // 1-1) 벽과의 완전 비탄성 충돌
+            if (collidee.isStatic) {
+                collider.velocity = collider.velocity.stopByReflection(normal);
+                return;
+            }
+            // 1-2) 물체와의 완전 비탄성 충돌
+            const momentum1 = collider.momentum;
+            const momentum2 = collidee.momentum;
+            const massSum = collider.mass + collidee.mass;
+            collider.momentum = momentum2.mul(collider.mass / massSum);
+            collidee.momentum = momentum1.mul(collidee.mass / massSum);
         }
-        // 운동량 보존... 완전 탄성 충돌... 으아악
-        const momentum1 = collider.momentum;
-        const momentum2 = collidee.momentum;
-        collider.momentum = momentum2;
-        collidee.momentum = momentum1;
+        else {
+            // 2) 아니라면 완전 탄성 충돌한다.
+            // 2-1) 벽과의 완전 탄성 충돌
+            if (collidee.isStatic) {
+                // 반사각을 계산해서 collider를 튕겨날려주자.
+                collider.velocity = collider.velocity.reflect(normal);
+                return;
+            }
+            // 2-2) 물체와의 완전 탄성 충돌
+            const momentum1 = collider.momentum;
+            const momentum2 = collidee.momentum;
+            collider.momentum = momentum2;
+            collidee.momentum = momentum1;
+        }
     }
     findBodyInPos(pos) {
         return this.bodies.find((body) => body.bounds.contains(pos));
@@ -193,7 +214,7 @@ class Bounds {
         if (by1 <= ay1 && ay1 <= by2) {
             distY = by2 - ay1;
         } // B1---a1---B2   a2
-        if (distX < distY) {
+        if (Math.abs(distX) < Math.abs(distY)) {
             return new Vector2(distX, 0);
         }
         else {
@@ -226,8 +247,15 @@ class Renderer {
         const height = box.height * this.scalePx;
         const x1 = boxPos.x - width / 2;
         const y1 = boxPos.y - height / 2;
-        this.ctx.strokeStyle = "#008877";
-        this.ctx.fillStyle = "#00887766";
+        if (box.consumeAllEnergy) {
+            // 그렇다면 색을 다르게 칠해 준다.
+            this.ctx.strokeStyle = "#777";
+            this.ctx.fillStyle = "#3336";
+        }
+        else {
+            this.ctx.strokeStyle = "#087";
+            this.ctx.fillStyle = "#0876";
+        }
         this.ctx.lineWidth = 2;
         this.ctx.fillRect(x1, y1, width, height);
         this.ctx.strokeRect(x1, y1, width, height);
@@ -282,6 +310,14 @@ class Renderer {
         this.ctx.strokeStyle = "#44aaddcc";
         this.ctx.lineWidth = 4;
         this.drawArrowGizmo(scrPos, velPos);
+        // m/s text
+        if (this.scalePx >= 20) {
+            const speed = Math.floor(body.velocity.length * 10) / 10;
+            this.ctx.font = "14px sans-serif bold";
+            this.ctx.textAlign = "center";
+            this.ctx.fillStyle = "#2288bb";
+            this.ctx.fillText(`${speed} m/s`, velPos.x, velPos.y - 16);
+        }
     }
     drawMass(body) {
         if (this.scalePx < 20)
@@ -292,7 +328,7 @@ class Renderer {
         this.ctx.font = "14px sans-serif bold";
         this.ctx.textAlign = "center";
         this.ctx.fillStyle = "#000000bb";
-        this.ctx.fillText(`${body.mass}kg`, pos.x, pos.y);
+        this.ctx.fillText(`${body.mass} kg`, pos.x, pos.y);
     }
     drawThrowerArrow() {
         const body = this.world.thrower.selectedBody;
@@ -378,6 +414,10 @@ class Vector2 {
         return (this.x == vec.x) && (this.y == vec.y);
     }
     reflect(normal) {
+        return this.add(normal.mul(this.reverse.dot(normal)).mul(2));
+    }
+    stopByReflection(normal) {
         return this.add(normal.mul(this.reverse.dot(normal)));
     }
 }
+//# sourceMappingURL=ko3phys.js.map
