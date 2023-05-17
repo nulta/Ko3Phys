@@ -300,6 +300,10 @@ class Renderer {
         this.ctx.lineTo(scrW - baseMargin, scrH - baseMargin + 10);
         this.ctx.stroke();
         this.ctx.fillText("1m", scrW - baseMargin, scrH - baseMargin - 5);
+        // 시간 표시
+        const t = Math.floor(this.world.t * 10) / 10;
+        const displayTime = (t % 1 == 0) ? t + ".0" : t + "";
+        this.ctx.fillText(`t = ${displayTime}s`, scrW - baseMargin, scrH - baseMargin - 22);
     }
     drawVelocityArrow(body) {
         if (body.velocity.equals(Vector2.zero)) {
